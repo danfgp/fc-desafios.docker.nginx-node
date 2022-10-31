@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:8.0.31
+    container_name: db
+    tty: true
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_USER=nodeuser
+      - MYSQL_PASSWORD=nodepass
+    volumes:
+      - ./mysql:/var/lib/mysql
+    ports:
+      - 3306:3306
+    networks:
+      - mynet
+
+  app:
+    build:
+      context: node
+    container_name: app
+    tty: true
+    entrypoint: wait-for db:3306 -t 40 -- ./start.sh
+    #volumes:
+    #  - ./node/src:/usr/src
+    ports:
+      - 3000:3000
+    networks:
+      - mynet
+    depends_on:
+      - db 
+    
+  webserver:
+    image: nginx:1.23
+    container_name: webserver
+    tty: true
+    ports:
+      - 8080:80
+    networks:
+      - mynet
+    depends_on:
+      - db
+      - app
+
+networks:
+  mynet:
+    driver: bridge
